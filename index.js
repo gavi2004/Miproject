@@ -10,6 +10,7 @@ const productsRouter = require('./routes/products'); // Agregar esta línea
 const uploadRouter = require('./routes/upload');
 const carritoRoutes = require('./routes/carrito');
 const ventasRouter = require('./routes/ventas'); // Agrega esta línea
+require('dotenv').config();
 
 const app = express();
 const PORT = 5000;
@@ -21,12 +22,12 @@ app.use(express.json());
 // Agregar esta línea
 app.use('/users', usersRouter);
 
-// Conectar a MongoDB
-mongoose.connect('mongodb://localhost:27017/gestioner', {
+// Conectar a MongoDB usando la variable de entorno
+mongoose.connect(process.env.MONGODB_URI, {
   useNewUrlParser: true,
   useUnifiedTopology: true
 })
-.then(() => console.log('✅ Conectado a MongoDB'))
+.then(() => console.log('✅ Conexion Exitosa a Atlas MongoDB'))
 .catch(err => console.error('❌ Error conectando a MongoDB:', err));
 
 // Obtener IP
@@ -37,7 +38,7 @@ function obtenerIP(req) {
 // Ruta de prueba
 app.get('/ping', (req, res) => {
   const ip = obtenerIP(req);
-  console.log(`📶 Nuevo dispositivo conectado desde: ${ip}`);
+  console.log(`📶 Nueva Conexion Desde: ${ip}`);
   res.json({ message: 'Conectado al backend', ip });
 });
 
@@ -117,6 +118,6 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use('/upload', uploadRouter);
 
 // Iniciar servidor
-app.listen(PORT, () => {
-  console.log(`🚀 Servidor corriendo en http://localhost:${PORT}`);
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`🚀 Servidor corriendo en http://0.0.0.0:${PORT}`);
 });
