@@ -7,7 +7,7 @@ services:
       MONGO_INITDB_ROOT_USERNAME: root
       MONGO_INITDB_ROOT_PASSWORD: example
     ports:
-      - "27018:27017"
+      - "27020:27019"
     volumes:
       - mongo_data:/data/db
   app:
