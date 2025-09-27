@@ -122,3 +122,7 @@ app.listen(PORT, '0.0.0.0', function() {
   const address = this.address();
   console.log(`🚀 Servidor corriendo en http://${address.address}:${address.port}`);
 });
+
+app.get('/', (req, res) => {
+  res.send('¡Backend de Bodegita funcionando!');
+});
