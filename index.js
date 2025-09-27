@@ -10,8 +10,9 @@ const productsRouter = require('./routes/products'); // Agregar esta línea
 const uploadRouter = require('./routes/upload');
 const carritoRoutes = require('./routes/carrito');
 const ventasRouter = require('./routes/ventas'); // Agrega esta línea
-const https = require('https');
-const fs = require('fs');
+// const https = require('https');
+// const fs = require('fs');
+const http = require('http');
 require('dotenv').config();
 
 const app = express();
@@ -120,13 +121,9 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use('/upload', uploadRouter);
 
 // Iniciar servidor
-const httpsOptions = {
-  key: fs.readFileSync('key.pem'),
-  cert: fs.readFileSync('cert.pem'),
-};
-https.createServer(httpsOptions, app).listen(PORT, '0.0.0.0', function() {
+http.createServer(app).listen(PORT, '0.0.0.0', function() {
   const address = this.address();
-  console.log(`🚀 Servidor corriendo en https://${address.address}:${address.port}`);
+  console.log(`🚀 Servidor corriendo en http://${address.address}:${address.port}`);
 });
 
 app.get('/', (req, res) => {

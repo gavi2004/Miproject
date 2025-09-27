@@ -4,5 +4,5 @@ COPY package*.json ./
 RUN npm install --production
 COPY key.pem cert.pem ./
 COPY . .
-EXPOSE 5000
+EXPOSE 80
 CMD ["npm", "start"]
