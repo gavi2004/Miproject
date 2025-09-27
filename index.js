@@ -118,6 +118,7 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use('/upload', uploadRouter);
 
 // Iniciar servidor
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`🚀 Servidor corriendo en http://0.0.0.0:${PORT}`);
+app.listen(PORT, '0.0.0.0', function() {
+  const address = this.address();
+  console.log(`🚀 Servidor corriendo en http://${address.address}:${address.port}`);
 });
