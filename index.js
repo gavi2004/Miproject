@@ -2,6 +2,8 @@ const express = require('express');
 const cors = require('cors');
 const mongoose = require('mongoose');
 const path = require('path');
+const fs = require('fs');
+const https = require('https');
 const Usuario = require('./models/usuario'); // Importar el modelo centralizado
 const loginRouter = require('./login');  // Asegúrate de importar el enrutador de login
 const verificarToken = require('./middleware/auth'); // Importar el middleware de autenticación
@@ -10,9 +12,6 @@ const productsRouter = require('./routes/products'); // Agregar esta línea
 const uploadRouter = require('./routes/upload');
 const carritoRoutes = require('./routes/carrito');
 const ventasRouter = require('./routes/ventas'); // Agrega esta línea
-// const https = require('https');
-// const fs = require('fs');
-const http = require('http');
 require('dotenv').config();
 
 const app = express();
@@ -121,11 +120,17 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use('/upload', uploadRouter);
 
 // Iniciar servidor
-http.createServer(app).listen(PORT, '0.0.0.0', function() {
+// Iniciar servidor HTTPS
+const privateKey = fs.readFileSync('key.pem', 'utf8');
+const certificate = fs.readFileSync('cert.pem', 'utf8');
+const credentials = { key: privateKey, cert: certificate };
+
+const httpsServer = https.createServer(credentials, app);
+httpsServer.listen(PORT, '0.0.0.0', function() {
   const address = this.address();
-  console.log(`🚀 Servidor corriendo en http://${address.address}:${address.port}`);
+  console.log(`🚀 Servidor HTTPS corriendo en https://${address.address}:${address.port}`);
 });
 
 app.get('/', (req, res) => {
-  res.send('¡Backend de Bodegita funcionando!');
+  res.send('¡Backend de Bodegita funcionando con HTTPS!');
 });
