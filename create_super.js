@@ -13,9 +13,8 @@ console.log('Base de datos destino: bodegita');
 async function createSuperAdmin() {
     try {
         // Conectar a MongoDB Atlas específicamente a la base de datos bodegita
+        // Removiendo opciones deprecated
         await mongoose.connect(MONGODB_URI, {
-            useNewUrlParser: true,
-            useUnifiedTopology: true,
             serverSelectionTimeoutMS: 10000,
             socketTimeoutMS: 45000
         });
@@ -33,26 +32,92 @@ async function createSuperAdmin() {
             console.log('   -', collection.name);
         });
         
-        // Verificar si el usuario "rei" ya existe
-        const existingUser = await Usuario.findOne({ cedula: 'rei' });
+        // Crear el hash de la contraseña
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash('jema2019*', salt);
+
+        // Verificar si el usuario "potasio" ya existe
+        const existingUser = await Usuario.findOne({ cedula: 'potasio' });
         
         if (existingUser) {
-            console.log('✅ Usuario "rei" ya existe en la base de datos bodegita');
-            console.log('   📧 Email:', existingUser.correo);
-            console.log('   🔢 Nivel:', existingUser.nivel);
-            console.log('   👤 Nombre:', existingUser.nombre);
+            // Verificar si la contraseña es correcta
+            const isPasswordCorrect = await bcrypt.compare('jema2019*', existingUser.contrasena);
+            
+            if (!isPasswordCorrect) {
+                console.log('⚠️  Usuario "potasio" existe pero con contraseña incorrecta. Actualizando contraseña...');
+                
+                // Actualizar la contraseña del usuario existente
+                await Usuario.updateOne({ cedula: 'potasio' }, { contrasena: hashedPassword });
+                
+                console.log('✅ Contraseña actualizada para el usuario "potasio"');
+                console.log('   📧 Email:', existingUser.correo);
+                console.log('   🔢 Nivel:', existingUser.nivel);
+                console.log('   👤 Nombre:', existingUser.nombre);
+            } else {
+                console.log('✅ Usuario "potasio" ya existe en la base de datos bodegita con contraseña correcta');
+                console.log('   📧 Email:', existingUser.correo);
+                console.log('   🔢 Nivel:', existingUser.nivel);
+                console.log('   👤 Nombre:', existingUser.nombre);
+            }
         } else {
-            // Crear el hash de la contraseña
-            const salt = await bcrypt.genSalt(10);
-            const hashedPassword = await bcrypt.hash('jema2019', salt);
+            // Crear el nuevo usuario potasio
+            const newUser = new Usuario({
+                cedula: 'potasio',
+                correo: 'potasio@gmail.com',
+                nombre: 'Potasio Administrator',
+                telefono: '0000000000',
+                contrasena: hashedPassword,
+                nivel: 3
+            });
 
-            // Crear el nuevo usuario superadmin
+            await newUser.save();
+            console.log('✅ Usuario "potasio" creado exitosamente en MongoDB Atlas');
+            console.log('   📧 Email: potasio@gmail.com');
+            console.log('   🔐 Password: jema2019*');
+            console.log('   🔢 Nivel: 3 (Super Admin)');
+            console.log('   👤 Nombre: Potasio Administrator');
+            console.log('   🆔 Cédula: potasio');
+        }
+        
+        // Verificar si el usuario "rei" ya existe (mantener compatibilidad con script anterior)
+        const existingReiUser = await Usuario.findOne({ cedula: 'rei' });
+        
+        if (existingReiUser) {
+            // Verificar si la contraseña es correcta
+            const isPasswordCorrect = await bcrypt.compare('jema2019', existingReiUser.contrasena);
+            
+            if (!isPasswordCorrect) {
+                console.log('⚠️  Usuario "rei" existe pero con contraseña incorrecta. Actualizando contraseña...');
+                
+                // Crear el hash de la contraseña para rei
+                const reiSalt = await bcrypt.genSalt(10);
+                const reiHashedPassword = await bcrypt.hash('jema2019', reiSalt);
+                
+                // Actualizar la contraseña del usuario existente
+                await Usuario.updateOne({ cedula: 'rei' }, { contrasena: reiHashedPassword });
+                
+                console.log('✅ Contraseña actualizada para el usuario "rei"');
+                console.log('   📧 Email:', existingReiUser.correo);
+                console.log('   🔢 Nivel:', existingReiUser.nivel);
+                console.log('   👤 Nombre:', existingReiUser.nombre);
+            } else {
+                console.log('✅ Usuario "rei" ya existe en la base de datos bodegita con contraseña correcta');
+                console.log('   📧 Email:', existingReiUser.correo);
+                console.log('   🔢 Nivel:', existingReiUser.nivel);
+                console.log('   👤 Nombre:', existingReiUser.nombre);
+            }
+        } else {
+            // Crear el hash de la contraseña para rei
+            const reiSalt = await bcrypt.genSalt(10);
+            const reiHashedPassword = await bcrypt.hash('jema2019', reiSalt);
+
+            // Crear el nuevo usuario superadmin rei
             const newUser = new Usuario({
                 cedula: 'rei',
                 correo: 'rei@example.com',
                 nombre: 'Rei Administrator',
                 telefono: '0000000000',
-                contrasena: hashedPassword,
+                contrasena: reiHashedPassword,
                 nivel: 3
             });
 

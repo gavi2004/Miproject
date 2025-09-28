@@ -5,7 +5,8 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node index.js",
-    "super": "node create_super.js"
+    "super": "node create_super.js",
+    "create-user": "node create_user.js"
   },
   "keywords": [],
   "author": "",
