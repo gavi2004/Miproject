@@ -2,26 +2,23 @@ const express = require('express');
 const cors = require('cors');
 const mongoose = require('mongoose');
 const path = require('path');
-const fs = require('fs');
-const https = require('https');
-const Usuario = require('./models/usuario'); // Importar el modelo centralizado
-const loginRouter = require('./login');  // Asegúrate de importar el enrutador de login
-const verificarToken = require('./middleware/auth'); // Importar el middleware de autenticación
-const usersRouter = require('./routes/users'); // Importar el enrutador de usuarios
-const productsRouter = require('./routes/products'); // Agregar esta línea
+const Usuario = require('./models/usuario');
+const loginRouter = require('./login');
+const verificarToken = require('./middleware/auth');
+const usersRouter = require('./routes/users');
+const productsRouter = require('./routes/products');
 const uploadRouter = require('./routes/upload');
 const carritoRoutes = require('./routes/carrito');
-const ventasRouter = require('./routes/ventas'); // Agrega esta línea
+const ventasRouter = require('./routes/ventas');
 require('dotenv').config();
 
 const app = express();
-const PORT = 5000;
+const PORT = process.env.PORT || 3000;
 
 // Middleware
 app.use(cors());
 app.use(express.json());
 
-// Agregar esta línea
 app.use('/users', usersRouter);
 
 // Conectar a MongoDB usando la variable de entorno
@@ -99,9 +96,7 @@ app.post('/users', async (req, res) => {
 // Usar el loginRouter para las rutas de login
 app.use('/login', loginRouter);
 
-
-
-// Ruta protegida (debe ir después de importar verificarToken)
+// Ruta protegida
 app.get('/ruta-protegida', verificarToken, (req, res) => {
     res.json({ message: 'Acceso permitido', usuario: req.usuario });
 });
@@ -111,7 +106,7 @@ app.use('/products', productsRouter);
 
 app.use('/carrito', carritoRoutes);
 
-app.use('/ventas', ventasRouter); // Agrega esta línea para montar el router
+app.use('/ventas', ventasRouter);
 
 // Configurar el servicio de archivos estáticos para las imágenes
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
@@ -119,18 +114,11 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 // Agregar la ruta de upload
 app.use('/upload', uploadRouter);
 
-// Iniciar servidor
-// Iniciar servidor HTTPS
-const privateKey = fs.readFileSync('key.pem', 'utf8');
-const certificate = fs.readFileSync('cert.pem', 'utf8');
-const credentials = { key: privateKey, cert: certificate };
-
-const httpsServer = https.createServer(credentials, app);
-httpsServer.listen(PORT, '0.0.0.0', function() {
-  const address = this.address();
-  console.log(`🚀 Servidor HTTPS corriendo en https://${address.address}:${address.port}`);
+// INICIAR SERVIDOR HTTP SIMPLE (SIN HTTPS)
+app.listen(PORT, '0.0.0.0', function() {
+  console.log(`🚀 Servidor corriendo en puerto ${PORT}`);
 });
 
 app.get('/', (req, res) => {
-  res.send('¡Backend de Bodegita funcionando con HTTPS!');
+  res.send('¡Backend de Bodegita funcionando!');
 });

@@ -14,8 +14,9 @@ services:
       - mongo
     environment:
       - MONGODB_URI=mongodb://root:example@mongo:27017/miproject?authSource=admin
+      - PORT=3000
     ports:
-      - "8443:5000"
+      - "3000:3000"
     volumes:
       - ./uploads:/app/uploads
     restart: always
