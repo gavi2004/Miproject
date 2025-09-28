@@ -19,132 +19,176 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 
-app.use('/users', usersRouter);
-
-// CONEXIÓN A MONGODB ATLAS - MODIFICADO
-const MONGODB_URI = process.env.MONGODB_URI;
-
-if (!MONGODB_URI) {
-  console.error('❌ ERROR: MONGODB_URI no está definida en las variables de entorno');
-  console.log('💡 Configura MONGODB_URI en Coolify con tu URL de MongoDB Atlas');
-  process.exit(1);
-}
-
-console.log('🔗 Conectando a MongoDB Atlas...');
-
-// Conexión simple sin opciones deprecated
-mongoose.connect(MONGODB_URI)
-.then(() => {
-  console.log('✅ Conexión exitosa a MongoDB Atlas');
-  console.log('📊 Base de datos:', mongoose.connection.db?.databaseName || 'Conectado');
-})
-.catch(err => {
-  console.error('❌ Error conectando a MongoDB Atlas:', err.message);
-  console.log('💡 Verifica:');
-  console.log('   1. Que la URL de MongoDB Atlas sea correcta');
-  console.log('   2. Que tu IP esté en la whitelist de MongoDB Atlas');
-  console.log('   3. Que el usuario y contraseña sean correctos');
-  process.exit(1);
-});
-
-// Obtener IP
-function obtenerIP(req) {
-  return req.headers['x-forwarded-for'] || req.socket.remoteAddress;
-}
-
-// Ruta de prueba MEJORADA
-app.get('/ping', (req, res) => {
-  const ip = obtenerIP(req);
-  const dbStatus = mongoose.connection.readyState === 1 ? 'Conectada' : 'Desconectada';
-  
-  console.log(`📶 Nueva Conexion Desde: ${ip} | DB: ${dbStatus}`);
-  res.json({ 
-    message: 'Conectado al backend con MongoDB Atlas', 
-    ip,
-    database: dbStatus,
-    timestamp: new Date().toISOString()
-  });
-});
-
-// Verificar si la cédula ya existe
-app.get('/users/cedula/:cedula', async (req, res) => {
-  try {
-    const usuario = await Usuario.findOne({ cedula: req.params.cedula });
-    if (usuario) {
-      return res.status(200).json({ existe: true });
-    } else {
-      return res.status(404).json({ existe: false });
-    }
-  } catch (err) {
-    console.error('❌ Error al verificar cédula:', err);
-    res.status(500).json({ error: 'Error interno del servidor' });
-  }
-});
-
-// Registrar usuario
-app.post('/users', async (req, res) => {
-  const { cedula, correo, nombre, telefono, contrasena, nivel } = req.body;
-
-  if (!cedula || !correo || !nombre || !telefono || !contrasena) {
-    return res.status(400).json({ error: 'Faltan campos obligatorios' });
-  }
-
-  try {
-    const cedulaExistente = await Usuario.findOne({ cedula });
-    if (cedulaExistente) {
-      return res.status(409).json({ error: 'La cédula ya está registrada' });
-    }
-
-    const correoExistente = await Usuario.findOne({ correo });
-    if (correoExistente) {
-      return res.status(409).json({ error: 'El correo ya está registrado' });
-    }
-
-    const telefonoExistente = await Usuario.findOne({ telefono });
-    if (telefonoExistente) {
-      return res.status(409).json({ error: 'El teléfono ya está registrado' });
-    }
-
-    const nuevoUsuario = new Usuario({
-      cedula, correo, nombre, telefono, contrasena, nivel
-    });
-
-    await nuevoUsuario.save();
-    console.log('✅ Usuario guardado en MongoDB Atlas');
-    res.status(201).json({ message: 'Usuario registrado correctamente' });
-  } catch (err) {
-    console.error('❌ Error al registrar usuario:', err);
-    res.status(500).json({ error: 'Error interno del servidor' });
-  }
-});
-
-// Usar el loginRouter para las rutas de login
-app.use('/login', loginRouter);
-
-// Ruta protegida
-app.get('/ruta-protegida', verificarToken, (req, res) => {
-    res.json({ message: 'Acceso permitido', usuario: req.usuario });
-});
-
-// Agregar esta línea junto a las demás rutas
-app.use('/products', productsRouter);
-
-app.use('/carrito', carritoRoutes);
-
-app.use('/ventas', ventasRouter);
-
 // Configurar el servicio de archivos estáticos para las imágenes
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// Agregar la ruta de upload
-app.use('/upload', uploadRouter);
+// CONEXIÓN A MONGODB ATLAS - BASE DE DATOS BODEGITA
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb+srv://reina:jema2019@cluster0.l4gwdvq.mongodb.net/bodegita?retryWrites=true&w=majority';
 
-// INICIAR SERVIDOR
-app.listen(PORT, '0.0.0.0', function() {
-  console.log(`🚀 Servidor corriendo en puerto ${PORT}`);
-  console.log(`📊 Conectado a MongoDB Atlas`);
+console.log('🚀 Iniciando servidor Bodegita...');
+console.log('🔗 Conectando a MongoDB Atlas - Base: bodegita');
+
+// Configuración de conexión mejorada
+mongoose.connect(MONGODB_URI, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+    serverSelectionTimeoutMS: 10000,
+    socketTimeoutMS: 45000,
+    maxPoolSize: 10,
+    minPoolSize: 1
+})
+.then(() => {
+    console.log('✅ Conexión exitosa a MongoDB Atlas');
+    console.log('📊 Base de datos: bodegita');
+    console.log('⏰ Hora de conexión:', new Date().toLocaleString());
+})
+.catch(err => {
+    console.error('❌ Error crítico conectando a MongoDB Atlas:', err.message);
+    console.log('🔍 Detalles del error:', {
+        name: err.name,
+        code: err.code,
+        stack: err.stack
+    });
+    console.log('💡 Soluciones posibles:');
+    console.log('   1. Verificar la URL de MongoDB Atlas');
+    console.log('   2. Verificar que la base de datos "bodegita" exista');
+    console.log('   3. Verificar las credenciales de usuario');
+    console.log('   4. Verificar la whitelist de IPs en MongoDB Atlas');
+    process.exit(1);
 });
 
+// Eventos de conexión para monitoreo
+mongoose.connection.on('connected', () => {
+    console.log('📡 Mongoose conectado a MongoDB Atlas');
+});
+
+mongoose.connection.on('error', (err) => {
+    console.error('❌ Error de conexión Mongoose:', err);
+});
+
+mongoose.connection.on('disconnected', () => {
+    console.log('🔌 Mongoose desconectado de MongoDB Atlas');
+});
+
+// Obtener IP del cliente
+function obtenerIP(req) {
+    return req.headers['x-forwarded-for'] || 
+           req.connection.remoteAddress || 
+           req.socket.remoteAddress ||
+           (req.connection.socket ? req.connection.socket.remoteAddress : null);
+}
+
+// Ruta de prueba mejorada
+app.get('/ping', (req, res) => {
+    const ip = obtenerIP(req);
+    const dbStatus = mongoose.connection.readyState === 1 ? 'Conectada' : 'Desconectada';
+    const dbName = mongoose.connection.db ? mongoose.connection.db.databaseName : 'No disponible';
+    
+    console.log(`📶 Ping recibido desde: ${ip} | DB: ${dbStatus} | Base: ${dbName}`);
+    
+    res.json({ 
+        message: 'Backend de Bodegita funcionando correctamente',
+        ip: ip,
+        database: {
+            status: dbStatus,
+            name: dbName,
+            connected: mongoose.connection.readyState === 1
+        },
+        timestamp: new Date().toISOString(),
+        version: '1.0.0'
+    });
+});
+
+// Ruta de salud para load balancers
+app.get('/health', (req, res) => {
+    const dbHealthy = mongoose.connection.readyState === 1;
+    const status = dbHealthy ? 200 : 503;
+    
+    res.status(status).json({
+        status: dbHealthy ? 'healthy' : 'unhealthy',
+        database: dbHealthy ? 'connected' : 'disconnected',
+        timestamp: new Date().toISOString()
+    });
+});
+
+// Registrar rutas
+app.use('/users', usersRouter);
+app.use('/login', loginRouter);
+app.use('/products', productsRouter);
+app.use('/carrito', carritoRoutes);
+app.use('/ventas', ventasRouter);
+app.use('/upload', uploadRouter);
+
+// Ruta protegida
+app.get('/ruta-protegida', verificarToken, (req, res) => {
+    res.json({ 
+        message: 'Acceso permitido', 
+        usuario: req.usuario,
+        database: mongoose.connection.db.databaseName
+    });
+});
+
+// Ruta principal
 app.get('/', (req, res) => {
-  res.send('¡Backend de Bodegita funcionando con MongoDB Atlas!');
+    const dbStatus = mongoose.connection.readyState === 1 ? 'conectada' : 'desconectada';
+    res.send(`
+        <html>
+            <head>
+                <title>Bodegita Backend</title>
+                <style>
+                    body { font-family: Arial, sans-serif; margin: 40px; }
+                    .status { padding: 10px; border-radius: 5px; margin: 10px 0; }
+                    .connected { background: #d4edda; color: #155724; }
+                    .disconnected { background: #f8d7da; color: #721c24; }
+                </style>
+            </head>
+            <body>
+                <h1>🚀 Backend de Bodegita</h1>
+                <div class="status ${dbStatus === 'conectada' ? 'connected' : 'disconnected'}">
+                    📊 Base de datos: ${dbStatus}
+                </div>
+                <p>✅ Servidor funcionando correctamente</p>
+                <p><a href="/ping">Probar conexión</a></p>
+                <p><a href="/health">Estado de salud</a></p>
+            </body>
+        </html>
+    `);
+});
+
+// Manejo de errores global
+app.use((err, req, res, next) => {
+    console.error('❌ Error global:', err);
+    res.status(500).json({ 
+        error: 'Error interno del servidor',
+        message: err.message 
+    });
+});
+
+// Ruta 404
+app.use('*', (req, res) => {
+    res.status(404).json({ 
+        error: 'Ruta no encontrada',
+        path: req.originalUrl 
+    });
+});
+
+// Iniciar servidor
+app.listen(PORT, '0.0.0.0', function() {
+    console.log(`🚀 Servidor Bodegita corriendo en puerto ${PORT}`);
+    console.log(`🌐 URL: http://0.0.0.0:${PORT}`);
+    console.log(`📊 Base de datos: bodegita`);
+    console.log(`⏰ Iniciado: ${new Date().toLocaleString()}`);
+});
+
+// Manejo graceful de shutdown
+process.on('SIGINT', async () => {
+    console.log('🛑 Recibida señal de interrupción, cerrando servidor...');
+    await mongoose.connection.close();
+    process.exit(0);
+});
+
+process.on('SIGTERM', async () => {
+    console.log('🛑 Recibida señal de terminación, cerrando servidor...');
+    await mongoose.connection.close();
+    process.exit(0);
 });
