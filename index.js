@@ -40,6 +40,8 @@ app.get('/ping', (req, res) => {
   res.json({ message: 'Conectado al backend', ip });
 });
 
+app.use('/users', usersRouter); // ← ESTA ES LA LÍNEA QUE FALTA
+
 // Verificar si la cédula ya existe
 app.get('/users/cedula/:cedula', async (req, res) => {
   try {
