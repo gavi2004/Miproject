@@ -5,7 +5,7 @@ require('dotenv').config();
 const Usuario = require('./models/usuario');
 
 // Probar SIN autenticación primero
-const MONGODB_URI = 'mongodb://localhost:27017/miproject';
+const MONGODB_URI = 'mongodb://localhost:27030/miproject';
 
 console.log('🔗 Conectando a MongoDB sin autenticación...');
 
@@ -54,9 +54,9 @@ async function createSuperAdmin() {
         console.log('\n🔑 Probando con autenticación alternativa...');
         
         const authURIs = [
-            'mongodb://root:example@localhost:27017/admin',
-            'mongodb://admin:admin@localhost:27017/miproject',
-            'mongodb://localhost:27017/admin'
+            'mongodb://root:example@localhost:27030/admin',
+            'mongodb://admin:admin@localhost:27030/miproject',
+            'mongodb://localhost:27030/admin'
         ];
         
         for (const uri of authURIs) {

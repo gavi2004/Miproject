@@ -11,14 +11,14 @@ services:
     volumes:
       - mongo_data:/data/db
     ports:
-      - "27030:27017"
+      - "27030:27030"
 
   app:
     build: .
     depends_on:
       - mongo
     environment:
-      - MONGODB_URI=mongodb://localhost:27017/miproject
+      - MONGODB_URI=mongodb://localhost:27030/miproject
       - PORT=3000
     ports:
       - "3000:3000"
