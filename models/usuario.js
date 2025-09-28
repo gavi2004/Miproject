@@ -10,13 +10,15 @@ const userSchema = new mongoose.Schema({
   nivel: { type: Number, default: 1 },
 });
 
-// Middleware para encriptar la contraseña antes de guardar
+// UN SOLO middleware para hashear
 userSchema.pre('save', async function(next) {
   if (!this.isModified('contrasena')) return next();
   
   try {
+    console.log('🔍 MIDDLEWARE - Contraseña antes del hash:', this.contrasena);
     const salt = await bcrypt.genSalt(10);
     this.contrasena = await bcrypt.hash(this.contrasena, salt);
+    console.log('🔍 MIDDLEWARE - Contraseña después del hash:', this.contrasena);
     next();
   } catch (error) {
     next(error);

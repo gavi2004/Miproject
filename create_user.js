@@ -5,7 +5,7 @@ require('dotenv').config();
 const Usuario = require('./models/usuario');
 
 // USAR MONGODB ATLAS - CONEXIÓN DIRECTA A BODEGITA
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb+srv://reina:jema2019@cluster0.l4gwdvq.mongodb.net/bodegita?retryWrites=true&w=majority';
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb+srv://reina:jema2019@cluster0.l4gwdvq.mongodb.net/gestioner?retryWrites=true&w=majority';
 
 // Función para obtener entrada del usuario
 function getUserInput() {
