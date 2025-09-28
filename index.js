@@ -12,18 +12,21 @@ const carritoRoutes = require('./routes/carrito');
 const ventasRouter = require('./routes/ventas'); // Agrega esta línea
 
 const app = express();
-const PORT = 5000;
+const PORT = process.env.PORT || 3000; // Usar el puerto del entorno o 3000 por defecto
 
 // Middleware
 app.use(cors());
 app.use(express.json());
 
-// Agregar esta línea
-app.use('/users', usersRouter);
+// Configurar el servicio de archivos estáticos para las imágenes
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-mongoose.connect('mongodb+srv://reina:jema2019@cluster0.l4gwdvq.mongodb.net/gestioner?retryWrites=true&w=majority')
-.then(() => console.log('✅ Conectado a MongoDB Atlas - Base: gestioner'))
-.catch(err => console.error('❌ Error conectando a MongoDB Atlas:', err));
+// Conexión a MongoDB (usar variable de entorno o MongoDB local por defecto)
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/gestioner';
+
+mongoose.connect(MONGODB_URI)
+.then(() => console.log('✅ Conectado a MongoDB'))
+.catch(err => console.error('❌ Error conectando a MongoDB:', err));
 
 // Obtener IP
 function obtenerIP(req) {
@@ -52,11 +55,45 @@ app.get('/users/cedula/:cedula', async (req, res) => {
   }
 });
 
+// Registrar usuario
+app.post('/users', async (req, res) => {
+  const { cedula, correo, nombre, telefono, contrasena, nivel } = req.body;
+
+  if (!cedula || !correo || !nombre || !telefono || !contrasena) {
+    return res.status(400).json({ error: 'Faltan campos obligatorios' });
+  }
+
+  try {
+    const cedulaExistente = await Usuario.findOne({ cedula });
+    if (cedulaExistente) {
+      return res.status(409).json({ error: 'La cédula ya está registrada' });
+    }
+
+    const correoExistente = await Usuario.findOne({ correo });
+    if (correoExistente) {
+      return res.status(409).json({ error: 'El correo ya está registrado' });
+    }
+
+    const telefonoExistente = await Usuario.findOne({ telefono });
+    if (telefonoExistente) {
+      return res.status(409).json({ error: 'El teléfono ya está registrado' });
+    }
+
+    const nuevoUsuario = new Usuario({
+      cedula, correo, nombre, telefono, contrasena, nivel
+    });
+
+    await nuevoUsuario.save();
+    console.log('✅ Usuario guardado:', nuevoUsuario);
+    res.status(201).json({ message: 'Usuario registrado correctamente' });
+  } catch (err) {
+    console.error('❌ Error al registrar usuario:', err);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
 
 // Usar el loginRouter para las rutas de login
 app.use('/login', loginRouter);
-
-
 
 // Ruta protegida (debe ir después de importar verificarToken)
 app.get('/ruta-protegida', verificarToken, (req, res) => {
@@ -70,13 +107,10 @@ app.use('/carrito', carritoRoutes);
 
 app.use('/ventas', ventasRouter); // Agrega esta línea para montar el router
 
-// Configurar el servicio de archivos estáticos para las imágenes
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
-
 // Agregar la ruta de upload
 app.use('/upload', uploadRouter);
 
 // Iniciar servidor
-app.listen(PORT, () => {
-  console.log(`🚀 Servidor corriendo en http://localhost:${PORT}`);
+app.listen(PORT, '0.0.0.0', () => {  // Escuchar en todas las interfaces
+  console.log(`🚀 Servidor corriendo en http://0.0.0.0:${PORT}`);
 });

@@ -20,7 +20,7 @@ services:
     volumes:
       - ./uploads:/app/uploads
     ports:
-      - "3001:3000"  # Usar un puerto diferente para evitar conflictos
+      - "3002:3000"  # Usar un puerto diferente para evitar conflictos
     restart: always
 
 volumes:
