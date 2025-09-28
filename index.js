@@ -119,6 +119,58 @@ app.get('/', (req, res) => {
 // Ruta de login
 app.use('/login', loginRouter);
 
+// Agregar rutas para crear usuarios (debe ir antes de app.use('/users', usersRouter))
+app.post('/users', async (req, res) => {
+  const { cedula, correo, nombre, telefono, contrasena, nivel } = req.body;
+
+  if (!cedula || !correo || !nombre || !telefono || !contrasena) {
+    return res.status(400).json({ error: 'Faltan campos obligatorios' });
+  }
+
+  try {
+    const cedulaExistente = await Usuario.findOne({ cedula });
+    if (cedulaExistente) {
+      return res.status(409).json({ error: 'La cédula ya está registrada' });
+    }
+
+    const correoExistente = await Usuario.findOne({ correo });
+    if (correoExistente) {
+      return res.status(409).json({ error: 'El correo ya está registrado' });
+    }
+
+    const telefonoExistente = await Usuario.findOne({ telefono });
+    if (telefonoExistente) {
+      return res.status(409).json({ error: 'El teléfono ya está registrado' });
+    }
+
+    const nuevoUsuario = new Usuario({
+      cedula, correo, nombre, telefono, contrasena, nivel
+    });
+
+    await nuevoUsuario.save();
+    console.log('✅ Usuario guardado:', nuevoUsuario);
+    res.status(201).json({ message: 'Usuario registrado correctamente' });
+  } catch (err) {
+    console.error('❌ Error al registrar usuario:', err);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
+// Verificar si la cédula ya existe
+app.get('/users/cedula/:cedula', async (req, res) => {
+  try {
+    const usuario = await Usuario.findOne({ cedula: req.params.cedula });
+    if (usuario) {
+      return res.status(200).json({ existe: true });
+    } else {
+      return res.status(404).json({ existe: false });
+    }
+  } catch (err) {
+    console.error('❌ Error al verificar cédula:', err);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
 // Ruta de usuarios (ELIMINA las rutas duplicadas de /users que tenías antes)
 app.use('/users', usersRouter);
 
@@ -175,10 +227,21 @@ app.listen(PORT, '0.0.0.0', function() {
     console.log(`   - GET  /ping`);
     console.log(`   - GET  /health`);
     console.log(`   - POST /login`);
+    console.log(`   - POST /users`);
     console.log(`   - GET  /users`);
+    console.log(`   - GET  /users/cedula/:cedula`);
+    console.log(`   - GET  /users/:id`);
+    console.log(`   - PUT  /users/:id`);
+    console.log(`   - DELETE /users/:id`);
     console.log(`   - GET  /products`);
+    console.log(`   - POST /products`);
+    console.log(`   - PUT  /products/:id`);
+    console.log(`   - DELETE /products/:id`);
     console.log(`   - GET  /carrito`);
+    console.log(`   - POST /carrito/add`);
+    console.log(`   - POST /carrito/remove`);
     console.log(`   - GET  /ventas`);
+    console.log(`   - POST /ventas`);
     console.log(`   - POST /upload`);
     console.log(`   - GET  /ruta-protegida`);
 });
