@@ -18,10 +18,8 @@ services:
     depends_on:
       - mongo
     environment:
-      - MONGODB_URI=mongodb://localhost:27030/miproject
+      - MONGODB_URI=${MONGODB_URI}  # Usará la variable de entorno de Coolify
       - PORT=3000
-    ports:
-      - "3000:3000"
     volumes:
       - ./uploads:/app/uploads
     restart: always

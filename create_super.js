@@ -4,21 +4,27 @@ require('dotenv').config();
 
 const Usuario = require('./models/usuario');
 
-// Probar SIN autenticación primero
-const MONGODB_URI = 'mongodb://localhost:27030/miproject';
+// USAR MONGODB ATLAS - MODIFICADO
+const MONGODB_URI = process.env.MONGODB_URI;
 
-console.log('🔗 Conectando a MongoDB sin autenticación...');
+if (!MONGODB_URI) {
+  console.error('❌ ERROR: MONGODB_URI no está definida');
+  console.log('💡 Ejecuta este script en el entorno de Coolify o define MONGODB_URI');
+  process.exit(1);
+}
+
+console.log('🔗 Conectando a MongoDB Atlas...');
 
 async function createSuperAdmin() {
     try {
-        // Conectar SIN opciones deprecated
+        // Conectar a MongoDB Atlas
         await mongoose.connect(MONGODB_URI);
         
-        console.log('✅ Conectado a MongoDB exitosamente');
+        console.log('✅ Conectado a MongoDB Atlas exitosamente');
         
-        // Verificar si podemos crear la base de datos
+        // Verificar la base de datos
         const db = mongoose.connection.db;
-        console.log('📊 Base de datos actual:', db.databaseName);
+        console.log('📊 Base de datos:', db.databaseName);
         
         // Verificar si el usuario "rei" ya existe
         const existingUser = await Usuario.findOne({ cedula: 'rei' });
@@ -26,6 +32,7 @@ async function createSuperAdmin() {
         if (existingUser) {
             console.log('✅ Usuario "rei" ya existe');
             console.log('   Email:', existingUser.correo);
+            console.log('   Nivel:', existingUser.nivel);
         } else {
             // Crear el hash de la contraseña
             const salt = await bcrypt.genSalt(10);
@@ -42,38 +49,24 @@ async function createSuperAdmin() {
             });
 
             await newUser.save();
-            console.log('✅ Super usuario "rei" creado exitosamente');
+            console.log('✅ Super usuario "rei" creado exitosamente en MongoDB Atlas');
             console.log('   Email: rei@example.com');
             console.log('   Password: jema2019');
+            console.log('   Nivel: 3 (Super Admin)');
         }
         
     } catch (error) {
         console.error('❌ Error:', error.message);
-        
-        // Si falla sin auth, probar con auth pero con diferentes credenciales
-        console.log('\n🔑 Probando con autenticación alternativa...');
-        
-        const authURIs = [
-            'mongodb://root:example@localhost:27030/admin',
-            'mongodb://admin:admin@localhost:27030/miproject',
-            'mongodb://localhost:27030/admin'
-        ];
-        
-        for (const uri of authURIs) {
-            try {
-                await mongoose.connect(uri);
-                console.log(`✅ Conectado con: ${uri}`);
-                // Intentar crear el usuario aquí...
-                break;
-            } catch (authError) {
-                console.log(`❌ Falló: ${uri}`);
-            }
-        }
+        console.log('💡 Verifica:');
+        console.log('   1. Que MONGODB_URI esté correctamente configurada');
+        console.log('   2. Que tu IP esté en la whitelist de MongoDB Atlas');
+        console.log('   3. Que las credenciales sean correctas');
     } finally {
         if (mongoose.connection.readyState !== 0) {
             await mongoose.connection.close();
             console.log('🔒 Conexión cerrada');
         }
+        process.exit(0);
     }
 }
 

@@ -21,23 +21,49 @@ app.use(express.json());
 
 app.use('/users', usersRouter);
 
-mongoose.connect(process.env.MONGODB_URI, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true
+// CONEXIÓN A MONGODB ATLAS - MODIFICADO
+const MONGODB_URI = process.env.MONGODB_URI;
+
+if (!MONGODB_URI) {
+  console.error('❌ ERROR: MONGODB_URI no está definida en las variables de entorno');
+  console.log('💡 Configura MONGODB_URI en Coolify con tu URL de MongoDB Atlas');
+  process.exit(1);
+}
+
+console.log('🔗 Conectando a MongoDB Atlas...');
+
+// Conexión simple sin opciones deprecated
+mongoose.connect(MONGODB_URI)
+.then(() => {
+  console.log('✅ Conexión exitosa a MongoDB Atlas');
+  console.log('📊 Base de datos:', mongoose.connection.db?.databaseName || 'Conectado');
 })
-.then(() => console.log('✅ Conexion Exitosa a Atlas MongoDB'))
-.catch(err => console.error('❌ Error conectando a MongoDB:', err));
+.catch(err => {
+  console.error('❌ Error conectando a MongoDB Atlas:', err.message);
+  console.log('💡 Verifica:');
+  console.log('   1. Que la URL de MongoDB Atlas sea correcta');
+  console.log('   2. Que tu IP esté en la whitelist de MongoDB Atlas');
+  console.log('   3. Que el usuario y contraseña sean correctos');
+  process.exit(1);
+});
 
 // Obtener IP
 function obtenerIP(req) {
   return req.headers['x-forwarded-for'] || req.socket.remoteAddress;
 }
 
-// Ruta de prueba
+// Ruta de prueba MEJORADA
 app.get('/ping', (req, res) => {
   const ip = obtenerIP(req);
-  console.log(`📶 Nueva Conexion Desde: ${ip}`);
-  res.json({ message: 'Conectado al backend', ip });
+  const dbStatus = mongoose.connection.readyState === 1 ? 'Conectada' : 'Desconectada';
+  
+  console.log(`📶 Nueva Conexion Desde: ${ip} | DB: ${dbStatus}`);
+  res.json({ 
+    message: 'Conectado al backend con MongoDB Atlas', 
+    ip,
+    database: dbStatus,
+    timestamp: new Date().toISOString()
+  });
 });
 
 // Verificar si la cédula ya existe
@@ -84,7 +110,7 @@ app.post('/users', async (req, res) => {
     });
 
     await nuevoUsuario.save();
-    console.log('✅ Usuario guardado:', nuevoUsuario);
+    console.log('✅ Usuario guardado en MongoDB Atlas');
     res.status(201).json({ message: 'Usuario registrado correctamente' });
   } catch (err) {
     console.error('❌ Error al registrar usuario:', err);
@@ -113,11 +139,12 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 // Agregar la ruta de upload
 app.use('/upload', uploadRouter);
 
-// INICIAR SERVIDOR HTTP SIMPLE (SIN HTTPS)
+// INICIAR SERVIDOR
 app.listen(PORT, '0.0.0.0', function() {
   console.log(`🚀 Servidor corriendo en puerto ${PORT}`);
+  console.log(`📊 Conectado a MongoDB Atlas`);
 });
 
 app.get('/', (req, res) => {
-  res.send('¡Backend de Bodegita funcionando!');
+  res.send('¡Backend de Bodegita funcionando con MongoDB Atlas!');
 });
