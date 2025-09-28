@@ -21,7 +21,6 @@ app.use(express.json());
 
 app.use('/users', usersRouter);
 
-// Conectar a MongoDB usando la variable de entorno
 mongoose.connect(process.env.MONGODB_URI, {
   useNewUrlParser: true,
   useUnifiedTopology: true

@@ -1,4 +1,6 @@
-version: '3.8'
+# ELIMINAR esta línea:
+# version: '3.8'
+
 services:
   mongo:
     image: mongo:7
@@ -8,17 +10,21 @@ services:
       MONGO_INITDB_ROOT_PASSWORD: example
     volumes:
       - mongo_data:/data/db
+    ports:
+      - "27017:27017"
+
   app:
     build: .
     depends_on:
       - mongo
     environment:
-      - MONGODB_URI=mongodb://root:example@mongo:27017/miproject?authSource=admin
+      - MONGODB_URI=mongodb://localhost:27017/miproject
       - PORT=3000
     ports:
       - "3000:3000"
     volumes:
       - ./uploads:/app/uploads
     restart: always
+
 volumes:
   mongo_data:
