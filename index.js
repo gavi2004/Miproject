@@ -2,96 +2,22 @@ const express = require('express');
 const cors = require('cors');
 const mongoose = require('mongoose');
 const path = require('path');
-const Usuario = require('./models/usuario'); // Importar el modelo centralizado
-const loginRouter = require('./login');  // Asegúrate de importar el enrutador de login
-const verificarToken = require('./middleware/auth'); // Importar el middleware de autenticación
-const usersRouter = require('./routes/users'); // Importar el enrutador de usuarios
-const productsRouter = require('./routes/products'); // Agregar esta línea
+const Usuario = require('./models/usuario');
+const loginRouter = require('./login');
+const verificarToken = require('./middleware/auth');
+const usersRouter = require('./routes/users');
+const productsRouter = require('./routes/products');
 const uploadRouter = require('./routes/upload');
 const carritoRoutes = require('./routes/carrito');
-const ventasRouter = require('./routes/ventas'); // Agrega esta línea
+const ventasRouter = require('./routes/ventas');
+require('dotenv').config();
 
 const app = express();
-const PORT = 5000;
+const PORT = process.env.PORT || 3000;
 
 // Middleware
 app.use(cors());
 app.use(express.json());
-
-// Agregar esta línea
-app.use('/users', usersRouter);
-
-// Conectar a MongoDB
-mongoose.connect('mongodb://localhost:27017/gestioner', {
-  useNewUrlParser: true,
-  useUnifiedTopology: true
-})
-.then(() => console.log('✅ Conectado a MongoDB'))
-.catch(err => console.error('❌ Error conectando a MongoDB:', err));
-
-// Obtener IP
-function obtenerIP(req) {
-  return req.headers['x-forwarded-for'] || req.socket.remoteAddress;
-}
-
-// Ruta de prueba
-app.get('/ping', (req, res) => {
-  const ip = obtenerIP(req);
-  console.log(`📶 Nuevo dispositivo conectado desde: ${ip}`);
-  res.json({ message: 'Conectado al backend', ip });
-});
-
-// Verificar si la cédula ya existe
-app.get('/users/cedula/:cedula', async (req, res) => {
-  try {
-    const usuario = await Usuario.findOne({ cedula: req.params.cedula });
-    if (usuario) {
-      return res.status(200).json({ existe: true });
-    } else {
-      return res.status(404).json({ existe: false });
-    }
-  } catch (err) {
-    console.error('❌ Error al verificar cédula:', err);
-    res.status(500).json({ error: 'Error interno del servidor' });
-  }
-});
-
-// Registrar usuario
-app.post('/users', async (req, res) => {
-  const { cedula, correo, nombre, telefono, contrasena, nivel } = req.body;
-
-  if (!cedula || !correo || !nombre || !telefono || !contrasena) {
-    return res.status(400).json({ error: 'Faltan campos obligatorios' });
-  }
-
-  try {
-    const cedulaExistente = await Usuario.findOne({ cedula });
-    if (cedulaExistente) {
-      return res.status(409).json({ error: 'La cédula ya está registrada' });
-    }
-
-    const correoExistente = await Usuario.findOne({ correo });
-    if (correoExistente) {
-      return res.status(409).json({ error: 'El correo ya está registrado' });
-    }
-
-    const telefonoExistente = await Usuario.findOne({ telefono });
-    if (telefonoExistente) {
-      return res.status(409).json({ error: 'El teléfono ya está registrado' });
-    }
-
-    const nuevoUsuario = new Usuario({
-      cedula, correo, nombre, telefono, contrasena, nivel
-    });
-
-    await nuevoUsuario.save();
-    console.log('✅ Usuario guardado:', nuevoUsuario);
-    res.status(201).json({ message: 'Usuario registrado correctamente' });
-  } catch (err) {
-    console.error('❌ Error al registrar usuario:', err);
-    res.status(500).json({ error: 'Error interno del servidor' });
-  }
-});
 
 // Usar el loginRouter para las rutas de login
 app.use('/login', loginRouter);
@@ -114,7 +40,111 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 // Agregar la ruta de upload
 app.use('/upload', uploadRouter);
 
+// Obtener IP del cliente
+function obtenerIP(req) {
+    return req.headers['x-forwarded-for'] || 
+           req.connection.remoteAddress || 
+           req.socket.remoteAddress ||
+           (req.connection.socket ? req.connection.socket.remoteAddress : null);
+}
+
+// Ruta de prueba mejorada
+app.get('/ping', (req, res) => {
+    const ip = obtenerIP(req);
+    const dbStatus = mongoose.connection.readyState === 1 ? 'Conectada' : 'Desconectada';
+    const dbName = mongoose.connection.db ? mongoose.connection.db.databaseName : 'No disponible';
+    
+    console.log(`.debugLine Ping recibido desde: ${ip} | DB: ${dbStatus} | Base: ${dbName}`);
+    
+    res.json({ 
+        message: 'Backend de Bodegita funcionando correctamente',
+        ip: ip,
+        database: {
+            status: dbStatus,
+            name: dbName,
+            connected: mongoose.connection.readyState === 1
+        },
+        timestamp: new Date().toISOString(),
+        version: '1.0.0'
+    });
+});
+
+// Ruta de salud para load balancers
+app.get('/health', (req, res) => {
+    const dbHealthy = mongoose.connection.readyState === 1;
+    const status = dbHealthy ? 200 : 503;
+    
+    res.status(status).json({
+        status: dbHealthy ? 'healthy' : 'unhealthy',
+        database: dbHealthy ? 'connected' : 'disconnected',
+        timestamp: new Date().toISOString()
+    });
+});
+
+// Registrar rutas
+app.use('/users', usersRouter);
+
+// Ruta principal
+app.get('/', (req, res) => {
+    const dbStatus = mongoose.connection.readyState === 1 ? 'conectada' : 'desconectada';
+    res.send(`
+        <html>
+            <head>
+                <title>Bodegita Backend</title>
+                <style>
+                    body { font-family: Arial, sans-serif; margin: 40px; }
+                    .status { padding: 10px; border-radius: 5px; margin: 10px 0; }
+                    .connected { background: #d4edda; color: #155724; }
+                    .disconnected { background: #f8d7da; color: #721c24; }
+                </style>
+            </head>
+            <body>
+                <h1>🚀 Backend de Bodegita</h1>
+                <div class="status ${dbStatus === 'conectada' ? 'connected' : 'disconnected'}">
+                    📊 Base de datos: ${dbStatus}
+                </div>
+                <p>✅ Servidor funcionando correctamente</p>
+                <p><a href="/ping">Probar conexión</a></p>
+                <p><a href="/health">Estado de salud</a></p>
+            </body>
+        </html>
+    `);
+});
+
+// Manejo de errores global
+app.use((err, req, res, next) => {
+    console.error('❌ Error global:', err);
+    res.status(500).json({ 
+        error: 'Error interno del servidor',
+        message: err.message 
+    });
+});
+
+// Ruta 404
+app.use((req, res) => {
+    res.status(404).json({ 
+        error: 'Ruta no encontrada',
+        path: req.originalUrl 
+    });
+});
+
 // Iniciar servidor
-app.listen(PORT, () => {
-  console.log(`🚀 Servidor corriendo en http://localhost:${PORT}`);
+app.listen(PORT, '0.0.0.0', function() {
+    console.log(`🚀 Servidor Bodegita corriendo en puerto ${PORT}`);
+    console.log(`🌐 URL: http://0.0.0.0:${PORT}`);
+    console.log(`📊 Base de datos: bodegita`);
+    console.log(`⏰ Iniciado: ${new Date().toLocaleString()}`);
+});
+
+// Manejo graceful de shutdown
+process.on('SIGINT', async () => {
+    console.log('🛑 Recibida señal de interrupción, cerrando servidor...');
+    await mongoose.connection.close();
+    process.exit(0);
+});
+
+process.on('SIGTERM', async () => {
+    console.log('🛑 Recibida señal de terminación, cerrando servidor...');
+    await mongoose.connection.close();
+    process.exit(0);
 });
