@@ -4,5 +4,5 @@ COPY package*.json ./
 RUN npm install --production
 COPY key.pem cert.pem ./
 COPY . .
-EXPOSE 443
+EXPOSE 8443
 CMD ["npm", "start"]
