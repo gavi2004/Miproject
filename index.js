@@ -84,7 +84,7 @@ app.get('/ping', (req, res) => {
     const dbStatus = mongoose.connection.readyState === 1 ? 'Conectada' : 'Desconectada';
     const dbName = mongoose.connection.db ? mongoose.connection.db.databaseName : 'No disponible';
     
-    console.log(`📶 Ping recibido desde: ${ip} | DB: ${dbStatus} | Base: ${dbName}`);
+    console.log(`.debugLine Ping recibido desde: ${ip} | DB: ${dbStatus} | Base: ${dbName}`);
     
     res.json({ 
         message: 'Backend de Bodegita funcionando correctamente',
@@ -165,7 +165,7 @@ app.use((err, req, res, next) => {
 });
 
 // Ruta 404
-app.use('*', (req, res) => {
+app.use((req, res) => {
     res.status(404).json({ 
         error: 'Ruta no encontrada',
         path: req.originalUrl 
