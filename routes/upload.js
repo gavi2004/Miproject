@@ -27,13 +27,20 @@ const fileFilter = (req, file, cb) => {
     mimetype: file.mimetype
   });
   
-  // Verificar si el archivo es una imagen
-  if (file.mimetype.startsWith('image/')) {
-    console.log(' Archivo aceptado como imagen');
+  // Extensiones de imagen permitidas
+  const allowedExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp', '.svg'];
+  const fileExtension = path.extname(file.originalname).toLowerCase();
+  
+  // Verificar si el archivo es una imagen por mimetype O por extensión
+  const isImageMimetype = file.mimetype.startsWith('image/');
+  const isImageExtension = allowedExtensions.includes(fileExtension);
+  
+  if (isImageMimetype || isImageExtension) {
+    console.log('✅ Archivo aceptado como imagen (mimetype:', file.mimetype, ', extensión:', fileExtension + ')');
     cb(null, true);
   } else {
-    console.log(' Archivo rechazado, mimetype:', file.mimetype);
-    cb(new Error('El archivo debe ser una imagen'), false);
+    console.log('❌ Archivo rechazado, mimetype:', file.mimetype, ', extensión:', fileExtension);
+    cb(new Error('El archivo debe ser una imagen (jpg, jpeg, png, gif, webp, bmp, svg)'), false);
   }
 };
 
